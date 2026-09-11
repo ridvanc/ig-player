@@ -1,56 +1,65 @@
 # IG Video Controls
 
-Chrome extension that adds a real video player UI to Instagram web (feed, reels, stories, post pages).
+Chrome extension that adds a real video player to Instagram on the web: feed, reels, stories and post pages.
 
-## Kurulum
+Instagram's web player has no seek bar, no speed control and swallows most clicks with its own overlays. This extension fixes that.
 
-1. Chrome'da `chrome://extensions` aç.
-2. Sağ üstten **Developer mode**'u aç.
-3. **Load unpacked** > bu klasörü seç.
-4. instagram.com'u yenile.
+> Not affiliated with, endorsed or sponsored by Instagram or Meta.
 
-## Ne yapar
+## Install
 
-İki mod var (extension ikonundaki popup'tan seçilir):
+1. Open `chrome://extensions` in Chrome.
+2. Turn on **Developer mode** (top right).
+3. Click **Load unpacked** and select this folder.
+4. Reload instagram.com.
 
-**Özel panel (varsayılan)** — Instagram'a uyan bir oynatıcı paneli:
-- Seek bar Instagram'ın story-ring gradyanıyla doluyor; renk videonun neresinde olduğunu gösteriyor.
-- Seek bar üzerinde gezinince zaman + önizleme karesi (izlediğin kısımlardan toplanır).
-- Oynat, ±5 sn, ses (hover'da açılan slider, tekerlekle ayar), hız menüsü (tekerlekle de değişir), PiP, tam ekran.
-- Tooltip'ler kısayol tuşunu da gösterir.
-- Fare durunca panel gizlenir, alt kenarda ince bir ilerleme çizgisi kalır.
-- Klavye aksiyonlarında ortada geri bildirim (oynat/duraklat diski, biriken "+10 sn" göstergesi, ses yüzdesi).
-- Dar oynatıcılarda ikincil butonlar otomatik gizlenir (klavye hâlâ çalışır).
+## Features
 
-Panel tarayıcının *top layer*'ında çizilir (Popover API), yani Instagram'ın hiçbir overlay'i üstüne çıkamaz. Instagram'ın DOM'una dokunmaz.
+Two modes, switchable from the extension's popup:
 
-**Chrome kontrolleri** — Videoya Chrome'un kendi oynatıcı kontrollerini açar ve Instagram'ın videoyu kaplayan şeffaf tıklama katmanlarını tıklamayı geçirir hale getirir. Carousel okları gibi kontrol şeridinin üstündeki küçük butonlar çalışmaya devam eder; kontrol şeridine denk gelen Instagram butonları (ör. mute) devre dışı kalır, onların yerine Chrome'unkiler var.
+**Custom panel (default)**, a player panel that fits Instagram:
+- The seek bar fills with Instagram's story-ring gradient, so its colour also tells you how far into the video you are.
+- Hover the seek bar to see the time and a preview frame (frames are collected from the parts you've already watched).
+- Play/pause, ±5 s skip, volume (slider unfolds on hover, adjustable with the scroll wheel), speed menu (also changes with the scroll wheel), picture-in-picture, fullscreen.
+- Tooltips show each control's keyboard shortcut.
+- The panel hides when the mouse is idle and leaves a thin progress line along the bottom edge.
+- Keyboard actions get on-screen feedback: a play/pause disc, a stacking "+10 s" seek indicator, a speed readout.
+- On narrow players, secondary buttons hide automatically. The keyboard shortcuts still work.
 
-**Temiz tam ekran (`F` / ⛶)** — Her iki modda da video elementinin kendisi Chrome kontrolleriyle tam ekran olur; Instagram'dan hiçbir şey ekranda kalmaz.
+The panel is drawn in the browser's *top layer* (Popover API), so none of Instagram's overlays can cover it, and it never modifies Instagram's DOM.
 
-## Kısayollar
+**Chrome controls** turns on Chrome's own video controls and makes Instagram's transparent click-catching layers click-through. Small buttons above the control strip, like carousel arrows, keep working. Instagram buttons that sit on top of the control strip, like its mute button, are disabled; Chrome's own controls replace them.
 
-| Tuş | İş |
+**Clean fullscreen (`F` / ⛶)**: in both modes, the video element itself goes fullscreen with Chrome's native controls, so nothing from Instagram stays on screen.
+
+## Keyboard shortcuts
+
+| Key | Action |
 |---|---|
-| `Space` / `K` | Oynat / durdur |
-| `←` `→` | 5 sn geri / ileri (popup'tan ayarlanır) |
-| `J` `L` | 10 sn geri / ileri |
-| `M` | Mute |
-| `F` | Temiz tam ekran (Chrome kontrolleri) |
+| `Space` / `K` | Play / pause |
+| `←` `→` | Seek back / forward 5 s (configurable in the popup) |
+| `J` `L` | Seek back / forward 10 s |
+| `M` | Mute / unmute |
+| `F` | Clean fullscreen (Chrome controls) |
 | `P` | Picture-in-picture |
-| `<` `>` | Hız azalt / artır |
-| `,` `.` | Kare kare |
-| `0`–`9` | Videonun %0–%90'ına atla |
-| `Home` / `End` | Başa / sona |
+| `<` `>` | Slower / faster |
+| `,` `.` | Previous / next frame |
+| `0`–`9` | Jump to 0–90% of the video |
+| `Home` / `End` | Jump to start / end |
 
-Kısayollar, ekranda en çok görünen videoya uygulanır. Yorum/DM kutusuna yazarken devre dışı kalır.
+Shortcuts apply to the video that takes up the most space on screen. They're ignored while you're typing in a comment or DM box.
 
-## Ayarlar
+## Settings
 
-Popup: aç/kapa, kontrol tipi, bar'ı hep göster, bar konumu (video içi alt/üst, videonun altında), sağ boşluk (Instagram'ın köşe butonu için), seek adımı, varsayılan hız.
+The popup lets you set: on/off, control style, always show the panel, panel position (inside the video at the bottom or top, or below the video), right-side gap (keeps Instagram's corner button clickable), seek step and default speed.
 
-## Notlar
+## Notes
 
-- Instagram DOM'u sürekli yeniden render ediyor; MutationObserver bar'ı yeniden bağlıyor.
-- Bar'a yapılan tıklamalar Instagram'ın document/window dinleyicilerine ulaşmaz ("dışarı tıklayınca postu kapat" gibi davranışlar tetiklenmez).
-- Uzun videolarda seek, sadece indirilmiş segmentlerde anında çalışır; ötesine atlarken kısa bir bekleme normal.
+- Instagram re-renders its DOM constantly; a MutationObserver picks up new videos as they appear.
+- Clicks on the panel never reach Instagram's document/window listeners, so things like "click outside to close the post" aren't triggered.
+- On long videos, seeking is instant only within already-downloaded segments. A short buffering pause when jumping further ahead is normal.
+- Preview frames exist only for parts you've already watched. Instagram provides a single stream per video, so there's no second decoder to pull unseen frames from.
+
+## Publishing
+
+See [PUBLISHING.md](PUBLISHING.md) for the Chrome Web Store checklist (in Turkish).
