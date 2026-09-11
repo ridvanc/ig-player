@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        --ig-grad: linear-gradient(90deg, #feda75 0%, #fa7e1e 25%, #d62976 50%, #962fbf 75%, #4f5bd5 100%);
+        --bg: #16121c;
+        --row: rgba(255, 255, 255, 0.05);
+        --line: rgba(255, 255, 255, 0.08);
+        --text: #fff;
+        --dim: rgba(255, 255, 255, 0.55);
+        --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        width: 290px;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      header { padding: 16px 16px 14px; }
+      h1 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+      .rail { height: 3px; margin-top: 12px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+      .rail::before { content: ""; display: block; width: 62%; height: 100%; background: var(--ig-grad); background-size: 161% 100%; }
+
+      section { padding: 0 10px 10px; }
+      .group { border-radius: 12px; background: var(--row); overflow: hidden; }
+      .group + .group { margin-top: 8px; }
+      label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 42px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      label + label { border-top: 1px solid var(--line); }
+      .hint { display: block; color: var(--dim); font-size: 11.5px; margin-top: 1px; }
+
+      /* switch */
+      .switch { position: relative; flex: 0 0 auto; width: 36px; height: 22px; }
+      .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+      .switch span {
+        position: absolute; inset: 0; border-radius: 11px;
+        background: rgba(255, 255, 255, 0.18);
+        transition: background 0.2s;
+        pointer-events: none;
+      }
+      .switch span::after {
+        content: ""; position: absolute; top: 3px; left: 3px;
+        width: 16px; height: 16px; border-radius: 50%; background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .switch input:checked + span { background: var(--ig-grad); }
+      .switch input:checked + span::after { transform: translateX(14px); }
+      .switch input:focus-visible + span { outline: 2px solid #fff; outline-offset: 2px; }
+
+      select, input[type="number"] {
+        appearance: none;
+        width: 128px;
+        padding: 6px 8px;
+        border: 0;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text);
+        font: 500 12.5px/1.2 system-ui, sans-serif;
+        text-align: right;
+      }
+      input[type="number"] { width: 64px; font-family: var(--mono); }
+      select { background-image: linear-gradient(45deg, transparent 50%, var(--dim) 50%), linear-gradient(135deg, var(--dim) 50%, transparent 50%); background-position: 10px 50%, 14px 50%; background-size: 4px 4px; background-repeat: no-repeat; padding-left: 22px; }
+      select:focus-visible, input[type="number"]:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+      option { background: var(--bg); }
+
+      details { margin: 0 10px 12px; border-radius: 12px; background: var(--row); }
+      summary { padding: 11px 12px; cursor: pointer; color: var(--dim); list-style: none; font-weight: 500; }
+      summary::-webkit-details-marker { display: none; }
+      summary::after { content: "+"; float: right; font-family: var(--mono); }
+      details[open] summary::after { content: "–"; }
+      .keys { padding: 0 12px 10px; }
+      .keys div { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; color: var(--dim); }
+      kbd {
+        display: inline-block; min-width: 20px; padding: 3px 5px; margin-left: 3px;
+        border-radius: 5px; background: rgba(255, 255, 255, 0.12); color: var(--text);
+        font: 600 11px/1 var(--mono); text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>IG Video Controls</h1>
+      <div class="rail" aria-hidden="true"></div>
+    </header>
+
+    <section>
+      <div class="group">
+        <label>
+          <span>Açık</span>
+          <span class="switch"><input id="enabled" type="checkbox" /><span></span></span>
+        </label>
+        <label>
+          <span>Kontroller</span>
+          <select id="mode">
+            <option value="custom">Özel panel</option>
+            <option value="native">Chrome'un kendisi</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="group">
+        <label>
+          <span>Hep göster<span class="hint">Kapalıyken fare durunca gizlenir</span></span>
+          <span class="switch"><input id="alwaysShowBar" type="checkbox" /><span></span></span>
+        </label>
+        <label>
+          <span>Konum</span>
+          <select id="barPosition">
+            <option value="bottom">Videonun içi, alt</option>
+            <option value="top">Videonun içi, üst</option>
+            <option value="below">Videonun altında</option>
+          </select>
+        </label>
+        <label>
+          <span>Sağ boşluk<span class="hint">Instagram köşe butonu için</span></span>
+          <input id="rightGutter" type="number" min="0" max="200" step="4" />
+        </label>
+      </div>
+
+      <div class="group">
+        <label>
+          <span>Sarma adımı<span class="hint">← → ve ±butonları, saniye</span></span>
+          <input id="seekStep" type="number" min="1" max="60" step="1" />
+        </label>
+        <label>
+          <span>Başlangıç hızı</span>
+          <select id="defaultSpeed">
+            <option value="0.75">0.75×</option>
+            <option value="1">Normal</option>
+            <option value="1.25">1.25×</option>
+            <option value="1.5">1.5×</option>
+            <option value="1.75">1.75×</option>
+            <option value="2">2×</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <details>
+      <summary>Kısayollar</summary>
+      <div class="keys">
+        <div><span>Oynat / duraklat</span><span><kbd>Space</kbd><kbd>K</kbd></span></div>
+        <div><span>Sar</span><span><kbd>←</kbd><kbd>→</kbd></span></div>
+        <div><span>10 sn sar</span><span><kbd>J</kbd><kbd>L</kbd></span></div>
+        <div><span>Sessiz</span><kbd>M</kbd></div>
+        <div><span>Hız</span><span><kbd>&lt;</kbd><kbd>&gt;</kbd></span></div>
+        <div><span>Tam ekran</span><kbd>F</kbd></div>
+        <div><span>Pencerede oynat</span><kbd>P</kbd></div>
+        <div><span>Kare kare</span><span><kbd>,</kbd><kbd>.</kbd></span></div>
+        <div><span>%0–90'a atla</span><span><kbd>0</kbd>–<kbd>9</kbd></span></div>
+      </div>
+    </details>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

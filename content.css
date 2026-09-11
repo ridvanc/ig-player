@@ -1,0 +1,566 @@
+/* =========================================================================
+   IG Video Controls
+   Tokens: Instagram story-ring gradient for progress, smoked ink scrim,
+   white glyphs, mono numerals. Everything lives in one top-layer popover.
+   ========================================================================= */
+
+.igvc-layer,
+.igvc-layer:popover-open {
+  --ig-grad: linear-gradient(90deg, #feda75 0%, #fa7e1e 25%, #d62976 50%, #962fbf 75%, #4f5bd5 100%);
+  --ink: 10, 8, 14;
+  --surface: rgba(22, 18, 28, 0.9);
+  --glyph: #fff;
+  --glyph-dim: rgba(255, 255, 255, 0.7);
+  --rail: rgba(255, 255, 255, 0.22);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  z-index: 2147483647;
+  pointer-events: none;
+  color: var(--glyph);
+  font: 500 13px/1 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.igvc-layer.igvc-off,
+.igvc-layer.igvc-native-fs { display: none; }
+
+.igvc-layer *,
+.igvc-layer *::before,
+.igvc-layer *::after { box-sizing: border-box; }
+
+/* Native mode: Instagram's click-catchers over the video become
+   click-through; small real buttons inside them stay clickable. */
+[data-igvc-pass] { pointer-events: none !important; }
+[data-igvc-keep] { pointer-events: auto !important; }
+
+/* ---------- bar shell ---------- */
+
+.igvc-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 112px;
+  pointer-events: none;
+}
+
+.igvc-scrim {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 var(--r, 0) var(--r, 0);
+  background: linear-gradient(
+    to top,
+    rgba(var(--ink), 0.82) 0%,
+    rgba(var(--ink), 0.5) 40%,
+    rgba(var(--ink), 0) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+
+.igvc-deck {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 10px 8px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.22s var(--ease), transform 0.32s var(--ease);
+  pointer-events: none;
+}
+
+.igvc-show .igvc-scrim { opacity: 1; }
+.igvc-show .igvc-deck { opacity: 1; transform: none; }
+
+/* Only real controls take clicks. Padding, gaps and the right gutter stay
+   click-through so Instagram's own buttons underneath keep working. */
+.igvc-show .igvc-track,
+.igvc-show .igvc-row > * { pointer-events: auto; }
+.igvc-show .igvc-row > .igvc-spacer,
+.igvc-show .igvc-row > .igvc-time { pointer-events: none; }
+
+/* Idle state: a hairline of progress along the bottom edge. */
+.igvc-mini {
+  position: absolute;
+  left: calc(var(--r, 0px) * 0.6);
+  right: calc(var(--r, 0px) * 0.6);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  transition: opacity 0.25s var(--ease);
+}
+
+.igvc-mini-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--ig-grad);
+  clip-path: inset(0 calc(100% - var(--p, 0%)) 0 0);
+}
+
+.igvc-show .igvc-mini { opacity: 0; }
+
+/* ---------- seek track ---------- */
+
+.igvc-track {
+  position: relative;
+  height: 22px;
+  margin: 0 4px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+
+.igvc-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 4px;
+  background: var(--rail);
+  overflow: hidden;
+  transition: height 0.16s var(--ease), margin-top 0.16s var(--ease);
+}
+
+.igvc-track:hover .igvc-rail,
+.igvc-scrubbing .igvc-rail {
+  height: 7px;
+  margin-top: -3.5px;
+}
+
+.igvc-buf,
+.igvc-ghost {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+}
+
+.igvc-buf { background: rgba(255, 255, 255, 0.2); }
+.igvc-ghost { background: rgba(255, 255, 255, 0.28); }
+
+/* The gradient spans the whole rail and is revealed by clipping, so the
+   colour under the playhead tells you how far in you are. */
+.igvc-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--ig-grad);
+  clip-path: inset(0 calc(100% - var(--p, 0%)) 0 0);
+}
+
+.igvc-knob {
+  position: absolute;
+  top: 50%;
+  left: var(--p, 0%);
+  width: 15px;
+  height: 15px;
+  margin: -7.5px 0 0 -7.5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 5px var(--kc, rgba(255, 255, 255, 0.3)), 0 2px 8px rgba(0, 0, 0, 0.45);
+  transform: scale(0);
+  transition: transform 0.18s var(--ease);
+  pointer-events: none;
+}
+
+.igvc-track:hover .igvc-knob,
+.igvc-track:focus-visible .igvc-knob,
+.igvc-scrubbing .igvc-knob { transform: scale(1); }
+
+.igvc-scrubbing .igvc-knob { transform: scale(1.15); }
+
+/* hover preview */
+.igvc-preview {
+  position: absolute;
+  bottom: 24px;
+  left: var(--hx, 0px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity 0.12s ease, transform 0.2s var(--ease);
+  pointer-events: none;
+}
+
+.igvc-previewing .igvc-preview {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.igvc-thumb {
+  display: block;
+  max-width: 160px;
+  max-height: 160px;
+  border-radius: 10px;
+  background: #000;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92), 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.igvc-thumb[hidden] { display: none; }
+
+.igvc-ptime {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--surface);
+  font: 600 12px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- control row ---------- */
+
+.igvc-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  padding-right: var(--igvc-gutter, 0px);
+}
+
+.igvc-spacer { flex: 1 1 auto; min-width: 4px; }
+
+.igvc-btn {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--glyph);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.14s var(--ease);
+}
+
+.igvc-btn:hover { background-color: rgba(255, 255, 255, 0.14); }
+.igvc-btn:active { transform: scale(0.88); }
+
+.igvc-btn:focus-visible,
+.igvc-track:focus-visible,
+.igvc-opt:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.igvc-btn svg {
+  grid-area: 1 / 1;
+  display: block;
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.igvc-play svg { width: 24px; height: 24px; }
+
+/* icon states */
+.igvc-play svg:nth-child(2),
+.igvc-playing .igvc-play svg:nth-child(1) { display: none; }
+.igvc-playing .igvc-play svg:nth-child(2) { display: block; }
+
+.igvc-mute svg { display: none; }
+.igvc-v-high .igvc-mute svg:nth-child(1),
+.igvc-v-low .igvc-mute svg:nth-child(2),
+.igvc-v-mute .igvc-mute svg:nth-child(3) { display: block; }
+
+/* volume: slider unfolds from the speaker */
+.igvc-volgroup {
+  display: flex;
+  align-items: center;
+}
+
+.igvc-vol {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  transition: width 0.26s var(--ease), opacity 0.18s ease, margin 0.26s var(--ease);
+}
+
+.igvc-volgroup:hover .igvc-vol,
+.igvc-vol:focus-visible {
+  width: 76px;
+  margin: 0 8px 0 2px;
+  opacity: 1;
+}
+
+.igvc-vol:focus-visible { outline: none; }
+
+.igvc-vol::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #fff var(--v, 100%), rgba(255, 255, 255, 0.26) var(--v, 100%));
+}
+
+.igvc-vol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
+.igvc-time {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  font: 500 12.5px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.igvc-sep { margin: 0 5px; opacity: 0.45; }
+.igvc-dur { opacity: 0.7; }
+
+/* speed */
+.igvc-speedwrap { position: relative; }
+
+.igvc-speed {
+  width: auto;
+  min-width: 46px;
+  padding: 0 9px;
+  border-radius: 18px;
+  font: 600 12.5px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.igvc-speed.igvc-speed-on {
+  background:
+    linear-gradient(rgba(var(--ink), 0.55), rgba(var(--ink), 0.55)) padding-box,
+    var(--ig-grad) border-box;
+  border: 1.5px solid transparent;
+}
+
+.igvc-menu {
+  position: absolute;
+  left: 50%;
+  bottom: 46px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 96px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface);
+  backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transform: translate(-50%, 8px) scale(0.96);
+  transform-origin: 50% 100%;
+  transition: opacity 0.14s ease, transform 0.22s var(--ease);
+  pointer-events: none;
+}
+
+.igvc-menu-open .igvc-menu {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  pointer-events: auto;
+}
+
+.igvc-opt {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--glyph-dim);
+  font: 500 13px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.igvc-opt::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.igvc-opt:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+.igvc-opt[aria-checked="true"] { color: #fff; }
+.igvc-opt[aria-checked="true"]::before { background: var(--ig-grad); }
+
+/* tooltip */
+.igvc-tip {
+  position: absolute;
+  left: var(--tx, 50%);
+  bottom: 74px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 7px 6px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font: 500 12px/1 var(--sans);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.12s ease, transform 0.16s var(--ease);
+  pointer-events: none;
+}
+
+.igvc-tip.igvc-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 0.25s;
+}
+
+.igvc-tip kbd {
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.85);
+  font: 600 11px/1 var(--mono);
+}
+
+.igvc-tip kbd[hidden] { display: none; }
+
+/* Narrower players shed secondary controls; keyboard still covers them. */
+.igvc-compact .igvc-back,
+.igvc-compact .igvc-fwd { display: none; }
+.igvc-narrow .igvc-pip,
+.igvc-narrow .igvc-sep,
+.igvc-narrow .igvc-dur { display: none; }
+
+/* ---------- position variants ---------- */
+
+.igvc-pos-top .igvc-scrim {
+  border-radius: var(--r, 0) var(--r, 0) 0 0;
+  background: linear-gradient(to bottom, rgba(var(--ink), 0.82) 0%, rgba(var(--ink), 0.5) 40%, rgba(var(--ink), 0) 100%);
+}
+.igvc-pos-top .igvc-deck { top: 0; bottom: auto; padding: 8px 10px 0; transform: translateY(-10px); display: flex; flex-direction: column-reverse; }
+.igvc-pos-top.igvc-show .igvc-deck { transform: none; }
+.igvc-pos-top .igvc-mini { top: 0; bottom: auto; }
+.igvc-pos-top .igvc-menu { top: 46px; bottom: auto; transform-origin: 50% 0; }
+.igvc-pos-top .igvc-tip { top: 74px; bottom: auto; }
+.igvc-pos-top .igvc-preview { top: 24px; bottom: auto; flex-direction: column-reverse; }
+
+.igvc-pos-below { height: 70px; }
+.igvc-pos-below .igvc-scrim,
+.igvc-pos-below .igvc-mini { display: none; }
+.igvc-pos-below .igvc-deck {
+  padding: 4px 10px 6px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- centre feedback ---------- */
+
+.igvc-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.igvc-disk {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  border-radius: 50%;
+  background: rgba(var(--ink), 0.52);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+}
+
+.igvc-disk svg { width: 30px; height: 30px; }
+.igvc-disk:has(.igvc-disk-label) svg { width: 24px; height: 24px; }
+.igvc-disk-label { font: 600 12px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.igvc-disk-text .igvc-disk-label { font-size: 17px; }
+
+.igvc-disk.igvc-flash { animation: igvc-pop 0.65s var(--ease) forwards; }
+
+@keyframes igvc-pop {
+  0% { opacity: 0; transform: scale(0.72); }
+  22% { opacity: 1; transform: scale(1); }
+  68% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.12); }
+}
+
+.igvc-seek {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  background: rgba(var(--ink), 0.52);
+  backdrop-filter: blur(12px);
+  font: 600 13px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transform: translateY(-50%);
+}
+
+.igvc-seek-l { left: 7%; }
+.igvc-seek-r { right: 7%; }
+.igvc-seek-l svg { transform: scaleX(-1); }
+.igvc-seek svg { width: 26px; height: 18px; }
+
+.igvc-seek path { opacity: 0.25; }
+.igvc-seek.igvc-flash { animation: igvc-fade 0.8s ease forwards; }
+.igvc-seek.igvc-flash path { animation: igvc-chev 0.6s ease forwards; }
+.igvc-seek.igvc-flash path:nth-child(2) { animation-delay: 0.08s; }
+.igvc-seek.igvc-flash path:nth-child(3) { animation-delay: 0.16s; }
+
+@keyframes igvc-fade {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes igvc-chev {
+  0% { opacity: 0.25; }
+  40% { opacity: 1; }
+  100% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .igvc-layer *,
+  .igvc-layer *::before,
+  .igvc-layer *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}

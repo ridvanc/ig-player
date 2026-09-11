@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Store/manifest icon: 96x96 artwork inside 16px transparent padding. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2233"/>
+      <stop offset="1" stop-color="#110d16"/>
+    </linearGradient>
+    <linearGradient id="ring" gradientUnits="userSpaceOnUse" x1="32" y1="0" x2="96" y2="0">
+      <stop offset="0" stop-color="#feda75"/>
+      <stop offset=".25" stop-color="#fa7e1e"/>
+      <stop offset=".5" stop-color="#d62976"/>
+      <stop offset=".75" stop-color="#962fbf"/>
+      <stop offset="1" stop-color="#4f5bd5"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#c02c8f" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#c02c8f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="16" y="16" width="96" height="96" rx="24" fill="url(#tile)"/>
+  <rect x="16.75" y="16.75" width="94.5" height="94.5" rx="23.25" fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="1.5"/>
+  <path d="M54 38.5v25a2.4 2.4 0 0 0 3.65 2.05l20.6-12.5a2.4 2.4 0 0 0 0-4.1l-20.6-12.5A2.4 2.4 0 0 0 54 38.5z" fill="#fff"/>
+  <rect x="32" y="83" width="64" height="6" rx="3" fill="#fff" fill-opacity=".2"/>
+  <rect x="32" y="83" width="40" height="6" rx="3" fill="url(#ring)"/>
+  <circle cx="72" cy="86" r="13" fill="url(#glow)"/>
+  <circle cx="72" cy="86" r="6.5" fill="#fff"/>
+</svg>
