@@ -40,6 +40,8 @@
       }
       label + label { border-top: 1px solid var(--line); }
       .hint { display: block; color: var(--dim); font-size: 11.5px; margin-top: 1px; }
+      #siteHost { font-family: var(--mono); }
+      [hidden] { display: none !important; }
 
       /* switch */
       .switch { position: relative; flex: 0 0 auto; width: 36px; height: 22px; }
@@ -92,14 +94,21 @@
   </head>
   <body>
     <header>
-      <h1>IG Video Controls</h1>
+      <h1>Video Controls</h1>
       <div class="rail" aria-hidden="true"></div>
     </header>
 
     <section>
+      <div class="group" id="siteGroup" hidden>
+        <label>
+          <span>Bu sitede<span class="hint" id="siteHost">…</span></span>
+          <span class="switch"><input id="siteEnabled" type="checkbox" /><span></span></span>
+        </label>
+      </div>
+
       <div class="group">
         <label>
-          <span>Açık</span>
+          <span>Her yerde açık</span>
           <span class="switch"><input id="enabled" type="checkbox" /><span></span></span>
         </label>
         <label>
@@ -125,7 +134,7 @@
           </select>
         </label>
         <label>
-          <span>Sağ boşluk<span class="hint">Instagram köşe butonu için</span></span>
+          <span>Sağ boşluk<span class="hint">Sitenin köşe butonundan uzak dur</span></span>
           <input id="rightGutter" type="number" min="0" max="200" step="4" />
         </label>
       </div>

@@ -6,48 +6,32 @@ Bu extension'ı Chrome Web Store'da yayınlamak için adım adım yapılacaklar.
 
 ## 0. Önce düzeltilmesi gerekenler
 
-Geriye sadece 2. madde (isim) kaldı; onu sen seçeceksin.
+Eklenti artık tüm sitelerde çalışan genel bir video kontrolcüsü. Bu, incelemede en kritik noktayı değiştirdi: geniş host izni (madde 3).
 
 | # | Sorun | Neden önemli | Yapılacak |
 |---|---|---|---|
 | 1 | ~~İkon yok~~ ✅ | Paket 128×128 ikon olmadan mağazaya yüklenemez | Yapıldı: `icons/` (16, 32, 48, 128 PNG + SVG kaynakları), manifest'e bağlandı |
-| 2 | **İsimde "IG"/"Instagram" var** | Instagram, Meta'nın tescilli markası. Adda kullanmak red sebebi olabilir, Meta'dan şikayet gelirse kaldırılır | Nötr bir ad seç. "Instagram"ı sadece açıklamada, tanım amaçlı kullan ("…for Instagram web") |
-| 3 | ~~`host_permissions` gereksiz~~ ✅ | Content script için `content_scripts.matches` yeterli. Fazladan host izni ek gerekçe istiyor ve incelemeyi uzatabiliyor | Yapıldı: manifest'ten silindi |
-| 4 | ~~`all_frames: true` gereksiz~~ ✅ | Instagram videoları iframe'de değil. Minimum yetki ilkesi | Yapıldı: satır silindi, varsayılan `false` |
+| 2 | ~~İsimde "IG"/"Instagram" var~~ ✅ | Instagram, Meta'nın tescilli markası | Ad "Video Controls" oldu. Çok genel bir ad; istersen daha ayırt edici bir isim seç, marka sorunu kalmadı |
+| 3 | **`matches: *://*/*` geniş izin** | Tüm sitelerde çalışmak "hassas izin" sayılıyor: inceleme çok daha sıkı ve uzun, kurulumda "tüm sitelerdeki verilerinizi okuyabilir" uyarısı çıkıyor | Kaçınılmaz, kapsam bu. Gerekçe metni aşağıda. Red gelirse alternatif: `optional_host_permissions` + site başına izin |
+| 4 | `all_frames: true` | Gömülü oynatıcılar iframe içinde. Genel kapsam için gerekli | Bilinçli açık |
 | 5 | ~~İkon Instagram logosuna benzememeli~~ ✅ | Taklit (impersonation) politikası | Karşılandı: koyu karo + play + seek bar motifi; kamera yok, gradyan sadece ilerleme çizgisinde |
 
-Önerilen manifest (isim örnek):
+Şu anki manifest (özet):
 
 ```json
 {
-  "manifest_version": 3,
-  "name": "Reel Scrubber",
-  "short_name": "Reel Scrubber",
-  "version": "1.0.0",
-  "description": "Seek bar, speed, volume and keyboard shortcuts for videos and reels on Instagram web.",
-  "icons": {
-    "16": "icons/16.png",
-    "32": "icons/32.png",
-    "48": "icons/48.png",
-    "128": "icons/128.png"
-  },
+  "name": "Video Controls",
+  "description": "Adds a seek bar, speed, volume and keyboard shortcuts to videos on sites that hide them.",
   "permissions": ["storage"],
   "content_scripts": [
     {
-      "matches": ["https://www.instagram.com/*"],
+      "matches": ["*://*/*"],
       "js": ["content.js"],
       "css": ["content.css"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "Reel Scrubber",
-    "default_icon": {
-      "16": "icons/16.png",
-      "32": "icons/32.png"
-    }
-  }
+  ]
 }
 ```
 
@@ -75,7 +59,7 @@ Kurallar:
 
 ```bash
 # proje klasöründe çalıştır
-zip -r ../reel-scrubber-1.0.0.zip manifest.json content.js content.css popup.html popup.js icons/*.png -x "*.DS_Store"
+zip -r ../video-controls-1.0.0.zip manifest.json content.js content.css popup.html popup.js icons/*.png -x "*.DS_Store"
 ```
 
 Pakete koyma: `README.md`, `PUBLISHING.md`, `icons/*.svg` (kaynak dosyalar), test dosyaları, `.git`.
@@ -140,12 +124,12 @@ Dikkat: Başkalarının reels/fotoğraflarını ekran görüntüsünde kullanma 
 | Red sebebi | Bu projede |
 |---|---|
 | Marka/isim ihlali | ⚠️ Adı değiştir (Bölüm 0, madde 2) |
-| Gereksiz izin | ✅ Tek izin: `storage`. `host_permissions` ve `all_frames` kaldırıldı |
+| Geniş izin | ⚠️ `*://*/*`. API izni sadece `storage`. İncelemenin en riskli noktası, gerekçeyi iyi yaz |
 | Eksik/uyumsuz gizlilik beyanı | Aşağıdaki metinlerle doldur |
 | Açıklamanın işlevle uyuşmaması, anahtar kelime doldurma | Hazır metin sade, sorun yok |
 | Obfuscated (karartılmış) kod | Kod okunabilir, sorun yok |
 | Uzaktan kod çalıştırma | Yok, sorun yok |
-| Çalışmayan ürün | İncelemeci Instagram'a giriş yapmadan da açabilir. Açıklamaya "Instagram web'de bir video açın" notu eklemek faydalı |
+| Çalışmayan ürün | İncelemeci hangi sayfada deneyeceğini bilmeli. Açıklamaya "kontrolsüz bir video içeren herhangi bir sayfayı aç" notu ve test için örnek bir URL ekle |
 
 Red gelirse e-postada politika maddesi yazar. Düzelt, `version` artır, yeniden gönder.
 
@@ -167,13 +151,13 @@ Yeni bir izin eklersen, Chrome kullanıcılarda extension'ı devre dışı bıra
 ### Kısa açıklama (manifest `description`, ≤132 karakter)
 
 ```
-Seek bar, speed, volume and keyboard shortcuts for videos and reels on Instagram web.
+Adds a seek bar, speed, volume and keyboard shortcuts to videos on sites that hide them.
 ```
 
 ### Detaylı açıklama (Store listing → Description)
 
 ```
-Instagram's web player has no seek bar. Reel Scrubber adds a proper video player to every video and reel on instagram.com.
+Plenty of sites embed video with no controls at all, or bury the player under their own overlays. Video Controls gives every video on the web a real player.
 
 • Seek bar – drag to any moment. Hover to see the time and a preview of frames you've already watched.
 • Playback speed – 0.25× to 3×, from a menu or the scroll wheel.
@@ -184,45 +168,43 @@ Instagram's web player has no seek bar. Reel Scrubber adds a proper video player
 • Auto-hides while you watch and leaves a thin progress line.
 • Optional: use Chrome's own video controls instead.
 
-How to use: open any video or reel on instagram.com and move the mouse over it.
+It stays out of the way: videos that already have controls, videos inside third-party players, and sites with a full player of their own (YouTube, Netflix, Twitch, Vimeo and others) are left alone. Every site can be switched on or off from the toolbar popup.
 
-Privacy: Reel Scrubber collects no data. It sends nothing anywhere and only stores your own settings in Chrome.
+Privacy: Video Controls collects no data. It sends nothing anywhere and only stores your own settings in Chrome.
 
-Not affiliated with, endorsed or sponsored by Instagram or Meta.
+Not affiliated with, endorsed or sponsored by any of the sites named above.
 ```
-
-> Son satır (bağımsızlık beyanı) marka sorunlarına karşı önemli, silme.
 
 ### Single purpose
 
 ```
-Adds playback controls (seek bar, speed, volume, keyboard shortcuts) to video players on instagram.com.
+Adds playback controls (seek bar, speed, volume, keyboard shortcuts) to HTML video elements on web pages.
 ```
 
 ### Permission justification: `storage`
 
 ```
-Saves the user's own settings for this extension (on/off, control style, bar position, seek step, default speed) with chrome.storage.sync. No other data is stored.
+Saves the user's own settings for this extension (on/off, control style, bar position, seek step, default speed, and the per-site on/off list) with chrome.storage.sync. No other data is stored.
 ```
 
-### Content script / host justification (`https://www.instagram.com/*`)
+### Host access justification (`*://*/*`) — en önemli kutu
 
 ```
-The content script runs only on instagram.com, where it finds <video> elements and draws playback controls over them. It does not read, collect or transmit page content, messages or account data.
+The extension's only function is to draw video controls over <video> elements, and a video can appear on any website, so the content script must run wherever one might be. It reads nothing from the page except the video elements' playback state (duration, current time, volume) and the geometry needed to position the controls. It does not read page text, form fields, cookies or account data, makes no network requests, and sends nothing anywhere. Sites that ship their own player are excluded by default and the user can switch any site on or off from the popup.
 ```
 
 ### Gizlilik politikası (Gist / GitHub Pages)
 
 ```
-Privacy Policy – Reel Scrubber
+Privacy Policy – Video Controls
 
 Last updated: <DATE>
 
-Reel Scrubber does not collect, store, transmit or sell any personal data.
+Video Controls does not collect, store, transmit or sell any personal data.
 
-- The extension runs only on https://www.instagram.com and only interacts with video elements on the page to add playback controls.
+- The extension only interacts with <video> elements on the pages you visit, in order to draw playback controls over them.
 - It makes no network requests and loads no remote code.
-- It saves only its own settings (on/off, control style, bar position, seek step, default speed) with Chrome's built-in storage (chrome.storage.sync). These settings may sync between your own Chrome browsers through your Google account and are never sent to the developer.
+- It saves only its own settings (on/off, control style, bar position, seek step, default speed, per-site on/off list) with Chrome's built-in storage (chrome.storage.sync). These settings may sync between your own Chrome browsers through your Google account and are never sent to the developer.
 - No analytics, tracking or third-party services are used.
 
 Contact: <EMAIL>

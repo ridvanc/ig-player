@@ -1,5 +1,6 @@
 const DEFAULTS = {
   enabled: true,
+  siteOverrides: {},
   mode: "custom",
   seekStep: 5,
   defaultSpeed: 1,
@@ -42,3 +43,31 @@ const save = () =>
 for (const el of Object.values(fields)) {
   el.addEventListener("change", save);
 }
+
+/* Per-site switch. The popup can't read the tab's URL without a host
+   permission, so the content script reports the host it is running on. */
+const siteGroup = document.getElementById("siteGroup");
+const siteHost = document.getElementById("siteHost");
+const siteEnabled = document.getElementById("siteEnabled");
+
+function renderSite(info) {
+  if (!info) return; // no content script here (chrome:// page, store, PDF…)
+  siteHost.textContent = info.host + (info.knownPlayerSite ? " · kendi oynatıcısı var" : "");
+  siteEnabled.checked = info.enabled;
+  siteGroup.hidden = false;
+}
+
+chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+  if (!tab?.id) return;
+  chrome.tabs.sendMessage(tab.id, { type: "igvc-site" }, (res) => {
+    void chrome.runtime.lastError;
+    renderSite(res);
+  });
+
+  siteEnabled.addEventListener("change", () => {
+    chrome.tabs.sendMessage(tab.id, { type: "igvc-site", enable: siteEnabled.checked }, (res) => {
+      void chrome.runtime.lastError;
+      renderSite(res);
+    });
+  });
+});

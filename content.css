@@ -447,6 +447,14 @@
 
 .igvc-tip kbd[hidden] { display: none; }
 
+/* Live streams: nothing to scrub to. */
+.igvc-live .igvc-track { cursor: default; }
+.igvc-live .igvc-knob,
+.igvc-live .igvc-preview { display: none; }
+.igvc-live .igvc-rail { background: rgba(255, 255, 255, 0.28); }
+.igvc-live .igvc-fill { clip-path: none; opacity: 0.5; }
+.igvc-live .igvc-dur { opacity: 1; font-weight: 700; }
+
 /* Narrower players shed secondary controls; keyboard still covers them. */
 .igvc-compact .igvc-back,
 .igvc-compact .igvc-fwd { display: none; }

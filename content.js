@@ -31,9 +31,24 @@
     chevs: svg('<path d="m5 7 5 5-5 5"/><path d="m11 7 5 5-5 5"/><path d="m17 7 5 5-5 5"/>', 'fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"')
   };
 
+  // Sites that ship a full player of their own; a second control bar would
+  // only get in the way. Users can still switch us on per site.
+  const SITES_WITH_PLAYERS = [
+    "youtube.com", "youtu.be", "netflix.com", "twitch.tv", "vimeo.com",
+    "primevideo.com", "disneyplus.com", "max.com", "hbomax.com", "hulu.com",
+    "crunchyroll.com", "tv.apple.com", "dailymotion.com", "bilibili.com",
+    "spotify.com", "music.amazon.com"
+  ];
+  // Common third-party player shells: the page already draws its own controls.
+  const PLAYER_SHELL =
+    ".video-js,.jwplayer,.plyr,.shaka-video-container,.mejs__container,.flowplayer,[data-vjs-player]";
+
+  const HOST = location.hostname.replace(/^www\./, "");
+
   const settings = {
     enabled: true,
     mode: "custom", // custom | native
+    siteOverrides: {}, // host -> true (force on) | false (force off)
     seekStep: 5,
     defaultSpeed: 1,
     alwaysShowBar: false,
@@ -60,8 +75,9 @@
   });
 
   function applySettings() {
-    const custom = settings.enabled && settings.mode === "custom";
-    const native = settings.enabled && settings.mode === "native";
+    const on = settings.enabled && siteAllowed();
+    const custom = on && settings.mode === "custom";
+    const native = on && settings.mode === "native";
 
     if (!custom) for (const v of [...entries.keys()]) detach(v);
     if (!native) restoreNative();
@@ -107,6 +123,21 @@
       el.isContentEditable ||
       el.getAttribute("role") === "textbox"
     );
+  }
+
+  /** Is the extension meant to run on this host at all? */
+  function siteAllowed() {
+    const override = settings.siteOverrides[HOST];
+    if (typeof override === "boolean") return override;
+    return !SITES_WITH_PLAYERS.some((d) => HOST === d || HOST.endsWith("." + d));
+  }
+
+  /** Does this particular video need controls from us? */
+  function eligible(video) {
+    if (video.controls) return false; // the page already shows real controls
+    if (video.closest(PLAYER_SHELL)) return false;
+    const r = video.getBoundingClientRect();
+    return r.width >= 200 && r.height >= 140;
   }
 
   function activeVideo() {
@@ -592,6 +623,7 @@
 
     ensureLayer().append(hud, bar);
     entries.set(video, entry);
+    startLoop();
   }
 
   function detach(video) {
@@ -660,8 +692,10 @@
 
     const cur = fmt(video.currentTime);
     if (last.cur !== cur) els.cur.textContent = last.cur = cur;
-    const dur = isFinite(d) ? fmt(d) : "–:––";
+    const live = !isFinite(d) || d === 0;
+    const dur = live ? "CANLI" : fmt(d);
     if (last.dur !== dur) els.dur.textContent = last.dur = dur;
+    if (last.live !== live) bar.classList.toggle("igvc-live", (last.live = live));
     els.track.setAttribute("aria-valuetext", `${cur} / ${dur}`);
 
     const playing = !video.paused;
@@ -702,7 +736,14 @@
     els.buf.style.width = buffered * 100 + "%";
   }
 
+  let rafId = 0;
+  function startLoop() {
+    if (!rafId) rafId = requestAnimationFrame(frame);
+  }
+
   function frame(now) {
+    rafId = 0;
+    if (!entries.size) return; // idle pages cost nothing
     for (const [video, entry] of entries) {
       if (!video.isConnected) {
         detach(video);
@@ -713,7 +754,7 @@
       paint(video, entry);
       captureFrame(video, entry, now);
     }
-    requestAnimationFrame(frame);
+    startLoop();
   }
 
   // Close an open speed menu on any press outside it.
@@ -819,7 +860,7 @@
   }
 
   setInterval(() => {
-    if (!settings.enabled || settings.mode !== "native") return;
+    if (!settings.enabled || settings.mode !== "native" || !siteAllowed()) return;
     for (const v of document.querySelectorAll("video")) {
       const r = v.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight || r.width < 200) continue;
@@ -852,7 +893,7 @@
   document.addEventListener(
     "keydown",
     (e) => {
-      if (!settings.enabled) return;
+      if (!settings.enabled || !siteAllowed()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (isTyping()) return;
 
@@ -882,13 +923,44 @@
   /* ---------- discovery ---------- */
 
   let queued = false;
+  let lastDeepScan = -Infinity; // the first scan always walks shadow roots
+  let shadowHosts = new Set();
+
+  /**
+   * Videos can sit inside shadow roots (many embedded players do). Walking
+   * every element is costly, so the deep walk runs at most every 2s and the
+   * shadow roots it finds are remembered for the cheap scans in between.
+   */
+  function collectVideos(now) {
+    const out = [...document.querySelectorAll("video")];
+
+    if (now - lastDeepScan > 2000) {
+      lastDeepScan = now;
+      shadowHosts = new Set();
+      const walk = (root) => {
+        for (const el of root.querySelectorAll("*")) {
+          if (el.shadowRoot) {
+            shadowHosts.add(el);
+            walk(el.shadowRoot);
+          }
+        }
+      };
+      walk(document);
+    }
+    for (const el of shadowHosts) {
+      if (!el.isConnected || !el.shadowRoot) continue;
+      out.push(...el.shadowRoot.querySelectorAll("video"));
+    }
+    return out;
+  }
+
   function scan() {
     queued = false;
-    if (!settings.enabled) return;
+    if (!settings.enabled || !siteAllowed()) return;
     checkTopLayer();
 
     const seen = new Set();
-    for (const v of document.querySelectorAll("video")) {
+    for (const v of collectVideos(performance.now())) {
       seen.add(v);
       if (v.dataset.igvcInit !== "1") {
         v.dataset.igvcInit = "1";
@@ -896,7 +968,7 @@
         v.removeAttribute("disablepictureinpicture");
         v.disablePictureInPicture = false;
       }
-      if (settings.mode === "custom" && !entries.has(v)) buildBar(v);
+      if (settings.mode === "custom" && !entries.has(v) && eligible(v)) buildBar(v);
     }
     for (const v of entries.keys()) if (!seen.has(v)) detach(v);
     for (const v of nativeVideos) if (!v.isConnected) nativeVideos.delete(v);
@@ -914,7 +986,24 @@
   });
 
   ensureLayer();
-  requestAnimationFrame(frame);
+
+  // The popup has no host permission to read the tab URL, so it asks us.
+  if (window.top === window) {
+    chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
+      if (msg?.type !== "igvc-site") return;
+      if (typeof msg.enable === "boolean") {
+        settings.siteOverrides = { ...settings.siteOverrides, [HOST]: msg.enable };
+        chrome.storage.sync.set({ siteOverrides: settings.siteOverrides });
+      }
+      respond({
+        host: HOST,
+        enabled: siteAllowed(),
+        knownPlayerSite: SITES_WITH_PLAYERS.some((d) => HOST === d || HOST.endsWith("." + d)),
+        videos: entries.size
+      });
+      return true;
+    });
+  }
 
   chrome.storage.sync.get(settings, (stored) => {
     Object.assign(settings, stored);
