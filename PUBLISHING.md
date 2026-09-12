@@ -4,14 +4,16 @@ Bu extension'ı Chrome Web Store'da yayınlamak için adım adım yapılacaklar.
 
 ---
 
-## 0. Önce düzeltilmesi gerekenler (şu anki kod yayına hazır değil)
+## 0. Önce düzeltilmesi gerekenler
+
+Geriye sadece 2. madde (isim) kaldı; onu sen seçeceksin.
 
 | # | Sorun | Neden önemli | Yapılacak |
 |---|---|---|---|
 | 1 | ~~İkon yok~~ ✅ | Paket 128×128 ikon olmadan mağazaya yüklenemez | Yapıldı: `icons/` (16, 32, 48, 128 PNG + SVG kaynakları), manifest'e bağlandı |
 | 2 | **İsimde "IG"/"Instagram" var** | Instagram, Meta'nın tescilli markası. Adda kullanmak red sebebi olabilir, Meta'dan şikayet gelirse kaldırılır | Nötr bir ad seç. "Instagram"ı sadece açıklamada, tanım amaçlı kullan ("…for Instagram web") |
-| 3 | **`host_permissions` gereksiz** | Content script için `content_scripts.matches` yeterli. Fazladan host izni ek gerekçe istiyor ve incelemeyi uzatabiliyor | `host_permissions` satırını sil |
-| 4 | **`all_frames: true` gereksiz** | Instagram videoları iframe'de değil. Minimum yetki ilkesi | `false` yap veya satırı sil |
+| 3 | ~~`host_permissions` gereksiz~~ ✅ | Content script için `content_scripts.matches` yeterli. Fazladan host izni ek gerekçe istiyor ve incelemeyi uzatabiliyor | Yapıldı: manifest'ten silindi |
+| 4 | ~~`all_frames: true` gereksiz~~ ✅ | Instagram videoları iframe'de değil. Minimum yetki ilkesi | Yapıldı: satır silindi, varsayılan `false` |
 | 5 | ~~İkon Instagram logosuna benzememeli~~ ✅ | Taklit (impersonation) politikası | Karşılandı: koyu karo + play + seek bar motifi; kamera yok, gradyan sadece ilerleme çizgisinde |
 
 Önerilen manifest (isim örnek):
@@ -138,7 +140,7 @@ Dikkat: Başkalarının reels/fotoğraflarını ekran görüntüsünde kullanma 
 | Red sebebi | Bu projede |
 |---|---|
 | Marka/isim ihlali | ⚠️ Adı değiştir (Bölüm 0, madde 2) |
-| Gereksiz izin | ⚠️ `host_permissions` ve `all_frames` kaldır |
+| Gereksiz izin | ✅ Tek izin: `storage`. `host_permissions` ve `all_frames` kaldırıldı |
 | Eksik/uyumsuz gizlilik beyanı | Aşağıdaki metinlerle doldur |
 | Açıklamanın işlevle uyuşmaması, anahtar kelime doldurma | Hazır metin sade, sorun yok |
 | Obfuscated (karartılmış) kod | Kod okunabilir, sorun yok |
